@@ -490,14 +490,208 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
           </svg>
           <span class="text-[10px] font-medium">明細</span>
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2
+          0 01-2 2z">
+          </path>
+          </svg>
+          文字
+        </button>
+        <button @click="addMode = 'carrier'"
+          class="flex-1 py-2 px-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1 whitespace-nowrap"
+          :class="addMode === 'carrier' ? 'bg-purple-50 text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+          </svg>
+          載具
         </button>
       </div>
-    </nav>
+
+      <!-- Loading State -->
+      <div x-show="isAnalyzing" class="flex flex-col items-center justify-center py-20 text-emerald-600">
+        <svg class="w-12 h-12 animate-spin mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+          </path>
+        </svg>
+        <p class="font-medium animate-pulse">正在處理您的資料...</p>
+        <p class="text-sm text-gray-400 mt-2">智慧分析金額、分類與商家中</p>
+      </div>
+
+      <!-- Scan Mode -->
+      <div x-show="!isAnalyzing && addMode === 'scan'" class="space-y-4">
+        <div
+          class="border-2 border-dashed border-emerald-200 bg-emerald-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center space-y-4">
+          <div class="bg-emerald-100 p-4 rounded-full text-emerald-600">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z">
+              </path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-800">上傳發票或收據</h3>
+            <p class="text-gray-500 text-sm mt-1">AI 自動辨識金額與分類</p>
+          </div>
+          <input type="file" accept="image/*" @change="handleFileUpload" class="hidden" x-ref="fileInput">
+          <button @click="$refs.fileInput.click()"
+            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            選擇圖片 / 拍照
+          </button>
+        </div>
+      </div>
+
+      <!-- Text Mode -->
+      <div x-show="!isAnalyzing && addMode === 'text'" class="space-y-4">
+        <textarea x-model="invoiceText" placeholder="請貼上發票文字內容、簡訊或是任何記帳筆記..."
+          class="w-full h-40 p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none text-gray-700"></textarea>
+        <button @click="handleTextParse()"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-blue-200">
+          開始解析
+        </button>
+      </div>
+
+      <!-- Carrier Mode -->
+      <div x-show="!isAnalyzing && addMode === 'carrier'" class="space-y-6">
+        <div class="bg-purple-50 p-6 rounded-2xl space-y-4">
+          <div class="flex items-center gap-3 text-purple-700 mb-2">
+            <div class="p-2 bg-purple-100 rounded-lg">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z">
+                </path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-bold">財政部雲端發票匯入</h3>
+              <p class="text-xs text-purple-600 opacity-80">自動同步手機條碼載具的消費</p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-purple-900 mb-1">手機條碼 (Card ID)</label>
+              <input type="text" x-model="carrierId" placeholder="/ABC1234"
+                class="w-full bg-white border border-purple-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-purple-500">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-purple-900 mb-1">驗證碼 (Verification Code)</label>
+              <input type="password" x-model="carrierCode" placeholder="財政部平台驗證碼"
+                class="w-full bg-white border border-purple-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-purple-500">
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 py-1">
+            <button type="button" @click="isTestMode = !isTestMode" class="w-10 h-6 rounded-full p-1 transition-colors"
+              :class="isTestMode ? 'bg-purple-600' : 'bg-gray-300'">
+              <div class="w-4 h-4 bg-white rounded-full transition-transform"
+                :class="isTestMode ? 'translate-x-4' : ''"></div>
+            </button>
+            <span class="text-xs text-gray-600">開啟測試模式 (Mock Data)</span>
+          </div>
+
+          <button @click="handleCarrierImport()"
+            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-purple-200 flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            同步發票資料
+          </button>
+        </div>
+        <div class="text-xs text-gray-400 text-center px-4">
+          注意：若無真實 API 金鑰或因瀏覽器安全限制 (CORS)，請使用測試模式體驗功能。
+        </div>
+      </div>
+
+      <!-- Manual Mode -->
+      <div x-show="!isAnalyzing && addMode === 'manual'" class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">日期</label>
+            <input type="date" x-model="newExpense.date"
+              class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">金額</label>
+            <input type="number" x-model="newExpense.amount" placeholder="0"
+              class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">類別</label>
+          <div class="grid grid-cols-4 gap-2">
+            <template x-for="cat in categories" :key="cat">
+              <button @click="newExpense.category = cat"
+                class="text-xs py-1.5 px-1 rounded-md border transition-all truncate"
+                :class="newExpense.category === cat ? 'bg-emerald-100 border-emerald-300 text-emerald-800 font-semibold' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-100'"
+                x-text="cat"></button>
+            </template>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">品項名稱</label>
+          <input type="text" x-model="newExpense.description" placeholder="例如：午餐、捷運"
+            class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">商家 (選填)</label>
+          <input type="text" x-model="newExpense.merchant" placeholder="例如：7-11"
+            class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <button @click="saveExpense()"
+          class="w-full bg-gray-900 text-white rounded-xl font-bold text-lg py-3 shadow-lg hover:bg-black transition-transform active:scale-95">
+          儲存
+        </button>
+      </div>
+  </div>
   </div>
 
-  <script type="module">
-    import { GoogleGenerativeAI } from "@google/genai";
+  <!-- Bottom Navigation -->
+  <nav x-show="view !== 'settings'" class="bg-white border-t border-gray-100 pt-2 px-6 shadow-lg z-40">
+    <div class="flex justify-between items-center h-16">
+      <button @click="view = 'dashboard'" class="flex flex-col items-center gap-1 transition-colors"
+        :class="view === 'dashboard' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'">
+        <svg class="w-6 h-6" :stroke-width="view === 'dashboard' ? 2.5 : 2" fill="none" stroke="currentColor"
+          viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z">
+          </path>
+        </svg>
+        <span class="text-[10px] font-medium">總覽</span>
+      </button>
 
+      <div class="relative -top-6">
+        <button @click="showAddModal = true"
+          class="bg-gray-900 text-white p-4 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all border-4 border-[#F9FAFB]">
+          <svg class="w-7 h-7" stroke-width="2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+          </svg>
+        </button>
+      </div>
+
+      <button @click="view = 'list'" class="flex flex-col items-center gap-1 transition-colors"
+        :class="view === 'list' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'">
+        <svg class="w-6 h-6" :stroke-width="view === 'list' ? 2.5 : 2" fill="none" stroke="currentColor"
+          viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+        <span class="text-[10px] font-medium">明細</span>
+      </button>
+    </div>
+  </nav>
+  </div>
+
+  <script>
+    // Define smartLedger globally immediately
     window.smartLedger = function () {
       return {
         view: 'dashboard',
@@ -648,6 +842,8 @@
               reader.readAsDataURL(file);
             });
 
+            // Dynamic import for GenAI
+            const { GoogleGenerativeAI } = await import("https://esm.run/@google/generative-ai");
             const genAI = new GoogleGenerativeAI(this.apiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -700,6 +896,8 @@
 
           this.isAnalyzing = true;
           try {
+            // Dynamic import for GenAI
+            const { GoogleGenerativeAI } = await import("https://esm.run/@google/generative-ai");
             const genAI = new GoogleGenerativeAI(this.apiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
