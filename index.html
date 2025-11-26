@@ -41,7 +41,7 @@
       <div class="flex items-center gap-2">
         <span class="text-xl font-bold tracking-tight text-emerald-950">Smart Ledger AI</span>
       </div>
-      <button @click="view = 'settings'; showAddModal = false"
+      <button @click="view = 'settings'; closeModal()"
         class="p-2 bg-white/50 backdrop-blur rounded-full text-gray-500 hover:bg-white hover:shadow-sm transition-all">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -160,14 +160,24 @@
                           </span>
                         </template>
                       </div>
-                      <button @click="deleteExpense(expense.id)"
-                        class="opacity-0 group-hover:opacity-100 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                          </path>
-                        </svg>
-                      </button>
+                      <div class="flex items-center gap-1">
+                        <button @click="editExpense(expense)"
+                          class="opacity-0 group-hover:opacity-100 p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z">
+                            </path>
+                          </svg>
+                        </button>
+                        <button @click="deleteExpense(expense.id)"
+                          class="opacity-0 group-hover:opacity-100 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                            </path>
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -252,12 +262,12 @@
 
     <!-- Add Modal -->
     <div x-show="showAddModal" class="absolute inset-0 z-50 bg-black/50 flex items-end justify-center backdrop-blur-sm"
-      @click.self="!isAnalyzing && (showAddModal = false)">
+      @click.self="closeModal()">
       <div class="w-full max-w-md bg-white min-h-[80vh] rounded-t-3xl shadow-lg p-6 overflow-y-auto">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-bold text-gray-800">新增支出</h2>
-          <button @click="!isAnalyzing && (showAddModal = false)"
-            class="p-2 hover:bg-gray-100 rounded-full text-gray-500" :disabled="isAnalyzing">
+          <h2 class="text-xl font-bold text-gray-800" x-text="editingId ? '編輯支出' : '新增支出'"></h2>
+          <button @click="closeModal()" class="p-2 hover:bg-gray-100 rounded-full text-gray-500"
+            :disabled="isAnalyzing">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
@@ -446,8 +456,8 @@
           </div>
 
           <button @click="saveExpense()"
-            class="w-full bg-gray-900 text-white rounded-xl font-bold text-lg py-3 shadow-lg hover:bg-black transition-transform active:scale-95">
-            儲存
+            class="w-full bg-gray-900 text-white rounded-xl font-bold text-lg py-3 shadow-lg hover:bg-black transition-transform active:scale-95"
+            x-text="editingId ? '更新' : '儲存'">
           </button>
         </div>
       </div>
@@ -468,7 +478,7 @@
         </button>
 
         <div class="relative -top-6">
-          <button @click="showAddModal = true"
+          <button @click="openAddModal()"
             class="bg-gray-900 text-white p-4 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all border-4 border-[#F9FAFB]">
             <svg class="w-7 h-7" stroke-width="2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
@@ -495,6 +505,7 @@
         view: 'dashboard',
         showAddModal: false,
         addMode: 'manual', // manual, scan, text, carrier
+        editingId: null,
         isAnalyzing: false,
         invoiceText: '',
         carrierId: '',
@@ -697,7 +708,7 @@
             // Dynamic import for GenAI
             const { GoogleGenerativeAI } = await import("https://esm.run/@google/generative-ai");
             const genAI = new GoogleGenerativeAI(this.apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
             const prompt = `
               請分析以下文字，並以 JSON 格式回傳支出資訊：
@@ -793,14 +804,45 @@
           this.isAnalyzing = false;
         },
 
+        openAddModal() {
+          this.editingId = null;
+          this.newExpense = {
+            date: new Date().toISOString().split('T')[0],
+            amount: '',
+            category: '飲食',
+            description: '',
+            merchant: ''
+          };
+          this.addMode = 'manual';
+          this.showAddModal = true;
+        },
+
+        closeModal() {
+          if (this.isAnalyzing) return;
+          this.showAddModal = false;
+          this.editingId = null;
+        },
+
+        editExpense(expense) {
+          this.editingId = expense.id;
+          this.newExpense = {
+            date: expense.date,
+            amount: expense.amount,
+            category: expense.category,
+            description: expense.description,
+            merchant: expense.merchant || ''
+          };
+          this.addMode = 'manual';
+          this.showAddModal = true;
+        },
+
         saveExpense() {
           if (!this.newExpense.amount || !this.newExpense.description) {
             alert('請填寫金額與描述');
             return;
           }
 
-          const expense = {
-            id: Date.now().toString(),
+          const expenseData = {
             date: this.newExpense.date,
             amount: parseFloat(this.newExpense.amount),
             category: this.newExpense.category,
@@ -808,7 +850,21 @@
             merchant: this.newExpense.merchant
           };
 
-          this.expenses.push(expense);
+          if (this.editingId) {
+            // Update existing
+            const index = this.expenses.findIndex(e => e.id === this.editingId);
+            if (index !== -1) {
+              this.expenses[index] = { ...this.expenses[index], ...expenseData };
+            }
+          } else {
+            // Create new
+            const expense = {
+              id: Date.now().toString(),
+              ...expenseData
+            };
+            this.expenses.push(expense);
+          }
+
           localStorage.setItem('smart-ledger-expenses', JSON.stringify(this.expenses));
 
           // Sync to Google Sheets if configured
@@ -817,19 +873,11 @@
               method: 'POST',
               mode: 'no-cors',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(expense)
+              body: JSON.stringify(this.editingId ? { id: this.editingId, ...expenseData } : { id: Date.now().toString(), ...expenseData })
             }).catch(e => console.error('Sync failed:', e));
           }
 
-          // Reset form
-          this.newExpense = {
-            date: new Date().toISOString().split('T')[0],
-            amount: '',
-            category: '飲食',
-            description: '',
-            merchant: ''
-          };
-          this.showAddModal = false;
+          this.closeModal();
         },
 
         deleteExpense(id) {
