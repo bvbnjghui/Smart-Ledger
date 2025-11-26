@@ -291,7 +291,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
             </svg>
-            掃描
+            掃描 (多筆)
           </button>
           <button @click="addMode = 'text'"
             class="flex-1 py-2 px-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1 whitespace-nowrap"
@@ -301,16 +301,7 @@
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
               </path>
             </svg>
-            文字
-          </button>
-          <button @click="addMode = 'carrier'"
-            class="flex-1 py-2 px-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1 whitespace-nowrap"
-            :class="addMode === 'carrier' ? 'bg-purple-50 text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-            </svg>
-            載具
+            文字 (多筆)
           </button>
         </div>
 
@@ -338,7 +329,7 @@
             </div>
             <div>
               <h3 class="text-lg font-semibold text-gray-800">上傳發票或收據</h3>
-              <p class="text-gray-500 text-sm mt-1">AI 自動辨識金額與分類</p>
+              <p class="text-gray-500 text-sm mt-1">AI 自動辨識多筆消費明細</p>
             </div>
             <input type="file" accept="image/*" @change="handleFileUpload" class="hidden" x-ref="fileInput">
             <button @click="$refs.fileInput.click()"
@@ -354,66 +345,12 @@
 
         <!-- Text Mode -->
         <div x-show="!isAnalyzing && addMode === 'text'" class="space-y-4">
-          <textarea x-model="invoiceText" placeholder="請貼上發票文字內容、簡訊或是任何記帳筆記..."
+          <textarea x-model="invoiceText" placeholder="請貼上發票文字內容、簡訊或是任何記帳筆記 (支援多筆)..."
             class="w-full h-40 p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none text-gray-700"></textarea>
           <button @click="handleTextParse()"
             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-blue-200">
             開始解析
           </button>
-        </div>
-
-        <!-- Carrier Mode -->
-        <div x-show="!isAnalyzing && addMode === 'carrier'" class="space-y-6">
-          <div class="bg-purple-50 p-6 rounded-2xl space-y-4">
-            <div class="flex items-center gap-3 text-purple-700 mb-2">
-              <div class="p-2 bg-purple-100 rounded-lg">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z">
-                  </path>
-                </svg>
-              </div>
-              <div>
-                <h3 class="font-bold">財政部雲端發票匯入</h3>
-                <p class="text-xs text-purple-600 opacity-80">自動同步手機條碼載具的消費</p>
-              </div>
-            </div>
-
-            <div class="space-y-3">
-              <div>
-                <label class="block text-xs font-medium text-purple-900 mb-1">手機條碼 (Card ID)</label>
-                <input type="text" x-model="carrierId" placeholder="/ABC1234"
-                  class="w-full bg-white border border-purple-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-purple-500">
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-purple-900 mb-1">驗證碼 (Verification Code)</label>
-                <input type="password" x-model="carrierCode" placeholder="財政部平台驗證碼"
-                  class="w-full bg-white border border-purple-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-purple-500">
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2 py-1">
-              <button type="button" @click="isTestMode = !isTestMode"
-                class="w-10 h-6 rounded-full p-1 transition-colors"
-                :class="isTestMode ? 'bg-purple-600' : 'bg-gray-300'">
-                <div class="w-4 h-4 bg-white rounded-full transition-transform"
-                  :class="isTestMode ? 'translate-x-4' : ''"></div>
-              </button>
-              <span class="text-xs text-gray-600">開啟測試模式 (Mock Data)</span>
-            </div>
-
-            <button @click="handleCarrierImport()"
-              class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-purple-200 flex items-center justify-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-              </svg>
-              同步發票資料
-            </button>
-          </div>
-          <div class="text-xs text-gray-400 text-center px-4">
-            注意：若無真實 API 金鑰或因瀏覽器安全限制 (CORS)，請使用測試模式體驗功能。
-          </div>
         </div>
 
         <!-- Manual Mode -->
@@ -504,13 +441,10 @@
       return {
         view: 'dashboard',
         showAddModal: false,
-        addMode: 'manual', // manual, scan, text, carrier
+        addMode: 'manual', // manual, scan, text
         editingId: null,
         isAnalyzing: false,
         invoiceText: '',
-        carrierId: '',
-        carrierCode: '',
-        isTestMode: false,
         expenses: [],
         apiKey: '',
         scriptUrl: '',
@@ -551,15 +485,6 @@
           if (config) {
             try {
               this.scriptUrl = JSON.parse(config).scriptUrl || '';
-            } catch (e) { }
-          }
-
-          const savedCarrier = localStorage.getItem('smart-ledger-carrier');
-          if (savedCarrier) {
-            try {
-              const c = JSON.parse(savedCarrier);
-              this.carrierId = c.id;
-              this.carrierCode = c.code;
             } catch (e) { }
           }
         },
@@ -657,15 +582,23 @@
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
             const prompt = `
-              請分析這張發票或收據圖片，並以 JSON 格式回傳以下資訊：
-              {
-                "amount": 總金額 (數字),
-                "date": 日期 (YYYY-MM-DD),
-                "description": 品項名稱 (字串),
-                "merchant": 商家名稱 (字串),
-                "category": 類別 (從這些選擇: 飲食, 交通, 購物, 娛樂, 居家, 醫療, 教育, 其他)
-              }
-              只回傳 JSON，不要有其他文字。
+              請分析這張發票或收據圖片，並以 JSON Array 格式回傳所有消費明細：
+              
+              JSON 格式範例:
+              [
+                {
+                  "amount": 金額 (數字),
+                  "date": "YYYY-MM-DD",
+                  "description": "品項名稱",
+                  "merchant": "商家名稱",
+                  "category": "類別 (飲食, 交通, 購物, 娛樂, 居家, 醫療, 教育, 其他)"
+                },
+                ...
+              ]
+              
+              注意：
+              1. 如果有多個品項，請回傳多個物件。
+              2. 只回傳 JSON Array，不要有其他文字。
             `;
 
             const result = await model.generateContent([
@@ -676,17 +609,32 @@
             const response = await result.response;
             const text = response.text();
             const jsonStr = text.replace(/```json|```/g, '').trim();
-            const data = JSON.parse(jsonStr);
+            let data = JSON.parse(jsonStr);
 
-            this.newExpense = {
-              date: data.date || new Date().toISOString().split('T')[0],
-              amount: data.amount || '',
-              category: data.category || '其他',
-              description: data.description || '掃描支出',
-              merchant: data.merchant || ''
-            };
+            // Ensure data is an array
+            if (!Array.isArray(data)) {
+              data = [data];
+            }
 
+            let addedCount = 0;
+            data.forEach(item => {
+              const expense = {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                date: item.date || new Date().toISOString().split('T')[0],
+                amount: item.amount || 0,
+                category: item.category || '其他',
+                description: item.description || '掃描支出',
+                merchant: item.merchant || ''
+              };
+              this.expenses.push(expense);
+              addedCount++;
+            });
+
+            localStorage.setItem('smart-ledger-expenses', JSON.stringify(this.expenses));
+            alert(`成功新增 ${addedCount} 筆支出！`);
             this.addMode = 'manual';
+            this.closeModal();
+
           } catch (error) {
             console.error('Analysis failed:', error);
             alert('辨識失敗，請重試或手動輸入');
@@ -711,97 +659,63 @@
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
             const prompt = `
-              請分析以下文字，並以 JSON 格式回傳支出資訊：
+              請分析以下文字，並以 JSON Array 格式回傳所有消費明細：
               文字內容: "${this.invoiceText}"
               
-              JSON 格式:
-              {
-                "amount": 總金額 (數字),
-                "date": 日期 (YYYY-MM-DD),
-                "description": 品項名稱 (字串),
-                "merchant": 商家名稱 (字串),
-                "category": 類別 (從這些選擇: 飲食, 交通, 購物, 娛樂, 居家, 醫療, 教育, 其他)
-              }
-              只回傳 JSON，不要有其他文字。
+              JSON 格式範例:
+              [
+                {
+                  "amount": 金額 (數字),
+                  "date": "YYYY-MM-DD",
+                  "description": "品項名稱",
+                  "merchant": "商家名稱",
+                  "category": "類別 (飲食, 交通, 購物, 娛樂, 居家, 醫療, 教育, 其他)"
+                },
+                ...
+              ]
+              
+              注意：
+              1. 如果有多個品項，請回傳多個物件。
+              2. 只回傳 JSON Array，不要有其他文字。
             `;
 
             const result = await model.generateContent(prompt);
             const response = await result.response;
             const text = response.text();
             const jsonStr = text.replace(/```json|```/g, '').trim();
-            const data = JSON.parse(jsonStr);
+            let data = JSON.parse(jsonStr);
 
-            this.newExpense = {
-              date: data.date || new Date().toISOString().split('T')[0],
-              amount: data.amount || '',
-              category: data.category || '其他',
-              description: data.description || this.invoiceText.slice(0, 20),
-              merchant: data.merchant || ''
-            };
+            // Ensure data is an array
+            if (!Array.isArray(data)) {
+              data = [data];
+            }
 
+            let addedCount = 0;
+            data.forEach(item => {
+              const expense = {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                date: item.date || new Date().toISOString().split('T')[0],
+                amount: item.amount || 0,
+                category: item.category || '其他',
+                description: item.description || (this.invoiceText.length > 20 ? '文字匯入' : this.invoiceText),
+                merchant: item.merchant || ''
+              };
+              this.expenses.push(expense);
+              addedCount++;
+            });
+
+            localStorage.setItem('smart-ledger-expenses', JSON.stringify(this.expenses));
+            alert(`成功新增 ${addedCount} 筆支出！`);
             this.addMode = 'manual';
             this.invoiceText = '';
+            this.closeModal();
+
           } catch (error) {
             console.error('Parsing failed:', error);
             alert('解析失敗，請重試或手動輸入');
           } finally {
             this.isAnalyzing = false;
           }
-        },
-
-        async handleCarrierImport() {
-          if (!this.carrierId || !this.carrierCode) {
-            alert('請輸入手機條碼和驗證碼');
-            return;
-          }
-
-          // Save carrier info
-          localStorage.setItem('smart-ledger-carrier', JSON.stringify({
-            id: this.carrierId,
-            code: this.carrierCode
-          }));
-
-          this.isAnalyzing = true;
-
-          if (this.isTestMode) {
-            // Mock data
-            setTimeout(() => {
-              const mockExpenses = [
-                {
-                  date: new Date().toISOString().split('T')[0],
-                  amount: 125,
-                  description: '拿鐵咖啡',
-                  merchant: '星巴克',
-                  category: '飲食'
-                },
-                {
-                  date: new Date().toISOString().split('T')[0],
-                  amount: 399,
-                  description: '衛生紙',
-                  merchant: '全聯福利中心',
-                  category: '居家'
-                }
-              ];
-
-              mockExpenses.forEach(e => {
-                this.expenses.push({
-                  id: Date.now().toString() + Math.random(),
-                  ...e
-                });
-              });
-
-              localStorage.setItem('smart-ledger-expenses', JSON.stringify(this.expenses));
-              this.isAnalyzing = false;
-              this.showAddModal = false;
-              alert(`成功匯入 ${mockExpenses.length} 筆發票資料 (測試模式)`);
-            }, 1500);
-            return;
-          }
-
-          // Real API implementation would go here
-          // Due to CORS and API complexity, we recommend using a backend proxy
-          alert('由於瀏覽器安全限制 (CORS)，請使用測試模式體驗此功能，或部署後端代理服務。');
-          this.isAnalyzing = false;
         },
 
         openAddModal() {
