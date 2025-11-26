@@ -1,9 +1,5 @@
 # Smart Ledger AI
 
-<div align="center">
-  <img width="1200" height="475" alt="Smart Ledger Banner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
 一個輕量級的智能記帳應用，使用 Alpine.js 構建，支援 AI 圖片辨識和 Google Sheets 同步。
 
 ## 🌟 特色功能
