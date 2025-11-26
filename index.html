@@ -27,6 +27,13 @@
       display: none !important;
     }
   </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://esm.sh/@google/genai@0.1.1"
+      }
+    }
+  </script>
 </head>
 
 <body>
@@ -177,7 +184,7 @@
         </template>
       </div>
 
-      <!-- Settings View (Placeholder) -->
+      <!-- Settings View -->
       <div x-show="view === 'settings'" class="h-full"></div>
     </main>
 
@@ -252,18 +259,162 @@
 
     <!-- Add Modal -->
     <div x-show="showAddModal" class="absolute inset-0 z-50 bg-black/50 flex items-end justify-center backdrop-blur-sm"
-      @click.self="showAddModal = false">
-      <div class="w-full max-w-md bg-white min-h-[80vh] rounded-t-3xl shadow-lg p-6">
+      @click.self="!isAnalyzing && (showAddModal = false)">
+      <div class="w-full max-w-md bg-white min-h-[80vh] rounded-t-3xl shadow-lg p-6 overflow-y-auto">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-xl font-bold text-gray-800">新增支出</h2>
-          <button @click="showAddModal = false" class="p-2 hover:bg-gray-100 rounded-full text-gray-500">
+          <button @click="!isAnalyzing && (showAddModal = false)"
+            class="p-2 hover:bg-gray-100 rounded-full text-gray-500" :disabled="isAnalyzing">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
 
-        <div class="space-y-4">
+        <!-- Mode Tabs -->
+        <div class="flex p-1 bg-gray-100 rounded-xl mb-6 overflow-x-auto no-scrollbar">
+          <button @click="addMode = 'manual'"
+            class="flex-1 py-2 px-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap"
+            :class="addMode === 'manual' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+            手動/檢視
+          </button>
+          <button @click="addMode = 'scan'"
+            class="flex-1 py-2 px-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1 whitespace-nowrap"
+            :class="addMode === 'scan' ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
+              </path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            掃描
+          </button>
+          <button @click="addMode = 'text'"
+            class="flex-1 py-2 px-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1 whitespace-nowrap"
+            :class="addMode === 'text' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+              </path>
+            </svg>
+            文字
+          </button>
+          <button @click="addMode = 'carrier'"
+            class="flex-1 py-2 px-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1 whitespace-nowrap"
+            :class="addMode === 'carrier' ? 'bg-purple-50 text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            載具
+          </button>
+        </div>
+
+        <!-- Loading State -->
+        <div x-show="isAnalyzing" class="flex flex-col items-center justify-center py-20 text-emerald-600">
+          <svg class="w-12 h-12 animate-spin mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+            </path>
+          </svg>
+          <p class="font-medium animate-pulse">正在處理您的資料...</p>
+          <p class="text-sm text-gray-400 mt-2">智慧分析金額、分類與商家中</p>
+        </div>
+
+        <!-- Scan Mode -->
+        <div x-show="!isAnalyzing && addMode === 'scan'" class="space-y-4">
+          <div
+            class="border-2 border-dashed border-emerald-200 bg-emerald-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center space-y-4">
+            <div class="bg-emerald-100 p-4 rounded-full text-emerald-600">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z">
+                </path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-800">上傳發票或收據</h3>
+              <p class="text-gray-500 text-sm mt-1">AI 自動辨識金額與分類</p>
+            </div>
+            <input type="file" accept="image/*" @change="handleFileUpload" class="hidden" x-ref="fileInput">
+            <button @click="$refs.fileInput.click()"
+              class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-emerald-200">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+              </svg>
+              選擇圖片 / 拍照
+            </button>
+          </div>
+        </div>
+
+        <!-- Text Mode -->
+        <div x-show="!isAnalyzing && addMode === 'text'" class="space-y-4">
+          <textarea x-model="invoiceText" placeholder="請貼上發票文字內容、簡訊或是任何記帳筆記..."
+            class="w-full h-40 p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none text-gray-700"></textarea>
+          <button @click="handleTextParse()"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-blue-200">
+            開始解析
+          </button>
+        </div>
+
+        <!-- Carrier Mode -->
+        <div x-show="!isAnalyzing && addMode === 'carrier'" class="space-y-6">
+          <div class="bg-purple-50 p-6 rounded-2xl space-y-4">
+            <div class="flex items-center gap-3 text-purple-700 mb-2">
+              <div class="p-2 bg-purple-100 rounded-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z">
+                  </path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-bold">財政部雲端發票匯入</h3>
+                <p class="text-xs text-purple-600 opacity-80">自動同步手機條碼載具的消費</p>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-purple-900 mb-1">手機條碼 (Card ID)</label>
+                <input type="text" x-model="carrierId" placeholder="/ABC1234"
+                  class="w-full bg-white border border-purple-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-purple-500">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-purple-900 mb-1">驗證碼 (Verification Code)</label>
+                <input type="password" x-model="carrierCode" placeholder="財政部平台驗證碼"
+                  class="w-full bg-white border border-purple-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-purple-500">
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 py-1">
+              <button type="button" @click="isTestMode = !isTestMode"
+                class="w-10 h-6 rounded-full p-1 transition-colors"
+                :class="isTestMode ? 'bg-purple-600' : 'bg-gray-300'">
+                <div class="w-4 h-4 bg-white rounded-full transition-transform"
+                  :class="isTestMode ? 'translate-x-4' : ''"></div>
+              </button>
+              <span class="text-xs text-gray-600">開啟測試模式 (Mock Data)</span>
+            </div>
+
+            <button @click="handleCarrierImport()"
+              class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-purple-200 flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+              </svg>
+              同步發票資料
+            </button>
+          </div>
+          <div class="text-xs text-gray-400 text-center px-4">
+            注意：若無真實 API 金鑰或因瀏覽器安全限制 (CORS)，請使用測試模式體驗功能。
+          </div>
+        </div>
+
+        <!-- Manual Mode -->
+        <div x-show="!isAnalyzing && addMode === 'manual'" class="space-y-4">
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-medium text-gray-500 mb-1">日期</label>
@@ -344,11 +495,19 @@
     </nav>
   </div>
 
-  <script>
-    function smartLedger() {
+  <script type="module">
+    import { GoogleGenerativeAI } from "@google/genai";
+
+    window.smartLedger = function () {
       return {
         view: 'dashboard',
         showAddModal: false,
+        addMode: 'manual', // manual, scan, text, carrier
+        isAnalyzing: false,
+        invoiceText: '',
+        carrierId: '',
+        carrierCode: '',
+        isTestMode: false,
         expenses: [],
         apiKey: '',
         scriptUrl: '',
@@ -389,6 +548,15 @@
           if (config) {
             try {
               this.scriptUrl = JSON.parse(config).scriptUrl || '';
+            } catch (e) { }
+          }
+
+          const savedCarrier = localStorage.getItem('smart-ledger-carrier');
+          if (savedCarrier) {
+            try {
+              const c = JSON.parse(savedCarrier);
+              this.carrierId = c.id;
+              this.carrierCode = c.code;
             } catch (e) { }
           }
         },
@@ -446,6 +614,189 @@
           return this.categoryColors[category] || '#6b7280';
         },
 
+        guessCategory(text) {
+          const keywords = {
+            '飲食': ['餐', '飯', '麵', '飲', '茶', '咖啡', '食', '肉', '菜', '果', '全聯', '7-11', '全家', '萊爾富', 'OK', '超市', '美廉社'],
+            '交通': ['車', '油', '捷運', '高鐵', '台鐵', '客運', '停車', 'ETC', 'Uber', '計程車', '悠遊卡'],
+            '購物': ['衣', '鞋', '包', '服', '飾', '蝦皮', 'PChome', 'momo', '淘寶', '百貨', 'Uniqlo', 'Zara'],
+            '娛樂': ['影', '戲', '遊', '樂', 'KTV', 'Netflix', 'Spotify', 'Disney', 'Steam', '遊戲'],
+            '居家': ['電', '水', '瓦斯', '房租', '管理費', '網路', '電話', 'IKEA', '宜家', '特力屋'],
+            '醫療': ['醫', '藥', '診', '健保', '掛號', '牙', '眼'],
+            '教育': ['書', '課', '學', '補習', '文具', '誠品', '博客來'],
+          };
+
+          for (const [cat, keys] of Object.entries(keywords)) {
+            if (keys.some(k => text.includes(k))) return cat;
+          }
+          return '其他';
+        },
+
+        async handleFileUpload(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+
+          if (!this.apiKey) {
+            alert('請先在設定中輸入 Gemini API Key');
+            return;
+          }
+
+          this.isAnalyzing = true;
+          try {
+            const base64 = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result.split(',')[1]);
+              reader.readAsDataURL(file);
+            });
+
+            const genAI = new GoogleGenerativeAI(this.apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+            const prompt = `
+              請分析這張發票或收據圖片，並以 JSON 格式回傳以下資訊：
+              {
+                "amount": 總金額 (數字),
+                "date": 日期 (YYYY-MM-DD),
+                "description": 品項名稱 (字串),
+                "merchant": 商家名稱 (字串),
+                "category": 類別 (從這些選擇: 飲食, 交通, 購物, 娛樂, 居家, 醫療, 教育, 其他)
+              }
+              只回傳 JSON，不要有其他文字。
+            `;
+
+            const result = await model.generateContent([
+              prompt,
+              { inlineData: { data: base64, mimeType: file.type } }
+            ]);
+
+            const response = await result.response;
+            const text = response.text();
+            const jsonStr = text.replace(/```json|```/g, '').trim();
+            const data = JSON.parse(jsonStr);
+
+            this.newExpense = {
+              date: data.date || new Date().toISOString().split('T')[0],
+              amount: data.amount || '',
+              category: data.category || '其他',
+              description: data.description || '掃描支出',
+              merchant: data.merchant || ''
+            };
+
+            this.addMode = 'manual';
+          } catch (error) {
+            console.error('Analysis failed:', error);
+            alert('辨識失敗，請重試或手動輸入');
+          } finally {
+            this.isAnalyzing = false;
+            event.target.value = ''; // Reset file input
+          }
+        },
+
+        async handleTextParse() {
+          if (!this.invoiceText.trim()) return;
+          if (!this.apiKey) {
+            alert('請先在設定中輸入 Gemini API Key');
+            return;
+          }
+
+          this.isAnalyzing = true;
+          try {
+            const genAI = new GoogleGenerativeAI(this.apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+            const prompt = `
+              請分析以下文字，並以 JSON 格式回傳支出資訊：
+              文字內容: "${this.invoiceText}"
+              
+              JSON 格式:
+              {
+                "amount": 總金額 (數字),
+                "date": 日期 (YYYY-MM-DD),
+                "description": 品項名稱 (字串),
+                "merchant": 商家名稱 (字串),
+                "category": 類別 (從這些選擇: 飲食, 交通, 購物, 娛樂, 居家, 醫療, 教育, 其他)
+              }
+              只回傳 JSON，不要有其他文字。
+            `;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+            const jsonStr = text.replace(/```json|```/g, '').trim();
+            const data = JSON.parse(jsonStr);
+
+            this.newExpense = {
+              date: data.date || new Date().toISOString().split('T')[0],
+              amount: data.amount || '',
+              category: data.category || '其他',
+              description: data.description || this.invoiceText.slice(0, 20),
+              merchant: data.merchant || ''
+            };
+
+            this.addMode = 'manual';
+            this.invoiceText = '';
+          } catch (error) {
+            console.error('Parsing failed:', error);
+            alert('解析失敗，請重試或手動輸入');
+          } finally {
+            this.isAnalyzing = false;
+          }
+        },
+
+        async handleCarrierImport() {
+          if (!this.carrierId || !this.carrierCode) {
+            alert('請輸入手機條碼和驗證碼');
+            return;
+          }
+
+          // Save carrier info
+          localStorage.setItem('smart-ledger-carrier', JSON.stringify({
+            id: this.carrierId,
+            code: this.carrierCode
+          }));
+
+          this.isAnalyzing = true;
+
+          if (this.isTestMode) {
+            // Mock data
+            setTimeout(() => {
+              const mockExpenses = [
+                {
+                  date: new Date().toISOString().split('T')[0],
+                  amount: 125,
+                  description: '拿鐵咖啡',
+                  merchant: '星巴克',
+                  category: '飲食'
+                },
+                {
+                  date: new Date().toISOString().split('T')[0],
+                  amount: 399,
+                  description: '衛生紙',
+                  merchant: '全聯福利中心',
+                  category: '居家'
+                }
+              ];
+
+              mockExpenses.forEach(e => {
+                this.expenses.push({
+                  id: Date.now().toString() + Math.random(),
+                  ...e
+                });
+              });
+
+              localStorage.setItem('smart-ledger-expenses', JSON.stringify(this.expenses));
+              this.isAnalyzing = false;
+              this.showAddModal = false;
+              alert(`成功匯入 ${mockExpenses.length} 筆發票資料 (測試模式)`);
+            }, 1500);
+            return;
+          }
+
+          // Real API implementation would go here
+          // Due to CORS and API complexity, we recommend using a backend proxy
+          alert('由於瀏覽器安全限制 (CORS)，請使用測試模式體驗此功能，或部署後端代理服務。');
+          this.isAnalyzing = false;
+        },
+
         saveExpense() {
           if (!this.newExpense.amount || !this.newExpense.description) {
             alert('請填寫金額與描述');
@@ -463,6 +814,16 @@
 
           this.expenses.push(expense);
           localStorage.setItem('smart-ledger-expenses', JSON.stringify(this.expenses));
+
+          // Sync to Google Sheets if configured
+          if (this.scriptUrl) {
+            fetch(this.scriptUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(expense)
+            }).catch(e => console.error('Sync failed:', e));
+          }
 
           // Reset form
           this.newExpense = {
