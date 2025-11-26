@@ -643,7 +643,7 @@
             // Dynamic import for GenAI
             const { GoogleGenerativeAI } = await import("https://esm.run/@google/generative-ai");
             const genAI = new GoogleGenerativeAI(this.apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
             const prompt = `
               請分析這張發票或收據圖片，並以 JSON 格式回傳以下資訊：
