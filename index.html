@@ -2,12 +2,11 @@
 <html lang="zh-TW">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Ledger AI</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Add Babel for in-browser JSX transformation -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
     body {
@@ -15,55 +14,486 @@
       background-color: #f3f4f6;
     }
 
-    /* Hide scrollbar for Chrome, Safari and Opera */
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
 
-    /* Hide scrollbar for IE, Edge and Firefox */
     .no-scrollbar {
       -ms-overflow-style: none;
-      /* IE and Edge */
       scrollbar-width: none;
-      /* Firefox */
+    }
+
+    [x-cloak] {
+      display: none !important;
     }
   </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.3.1",
-    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-    "react-dom": "https://esm.sh/react-dom@18.3.1",
-    "@google/genai": "https://esm.sh/@google/genai@1.30.0",
-    "lucide-react": "https://esm.sh/lucide-react@0.469.0?external=react",
-    "recharts": "https://esm.sh/recharts@2.15.0?external=react,react-dom"
-  }
-}
-</script>
-  <script>
-    // Polyfill for process.env
-    window.process = {
-      env: {
-        API_KEY: ''
-      }
-    };
-  </script>
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="app" x-data="smartLedger()" x-cloak
+    class="max-w-md mx-auto h-screen flex flex-col bg-[#F9FAFB] relative overflow-hidden">
 
-  <!-- Load scripts in dependency order. 'data-type="module"' allows using 'import' for external libs -->
-  <script type="text/babel" data-type="module" src="./types.js"></script>
-  <script type="text/babel" data-type="module" src="./services/geminiService.js"></script>
-  <script type="text/babel" data-type="module" src="./services/mofService.js"></script>
-  <script type="text/babel" data-type="module" src="./services/sheetService.js"></script>
-  <script type="text/babel" data-type="module" src="./components/Dashboard.js"></script>
-  <script type="text/babel" data-type="module" src="./components/AddExpense.js"></script>
-  <script type="text/babel" data-type="module" src="./components/ExpenseList.js"></script>
-  <script type="text/babel" data-type="module" src="./components/Settings.js"></script>
-  <script type="text/babel" data-type="module" src="./App.js"></script>
-  <script type="text/babel" data-type="module" src="./index.js"></script>
+    <!-- Top Decoration -->
+    <div class="absolute top-0 left-0 w-full h-48 bg-gradient-to-b from-emerald-50 to-transparent -z-10"></div>
+
+    <!-- Header -->
+    <div class="px-6 pt-6 flex justify-between items-center z-10">
+      <div class="flex items-center gap-2">
+        <span class="text-xl font-bold tracking-tight text-emerald-950">Smart Ledger AI</span>
+      </div>
+      <button @click="view = 'settings'; showAddModal = false"
+        class="p-2 bg-white/50 backdrop-blur rounded-full text-gray-500 hover:bg-white hover:shadow-sm transition-all">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+          </path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z">
+          </path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-5 no-scrollbar">
+      <!-- Dashboard View -->
+      <div x-show="view === 'dashboard'" class="space-y-6 pb-24">
+        <header class="mb-6">
+          <h1 class="text-2xl font-bold text-gray-800">財務概覽</h1>
+          <p class="text-gray-500 text-sm">歡迎回來，查看您的支出分析</p>
+        </header>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+            <div class="flex items-center gap-2 text-emerald-600 mb-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+              </svg>
+              <span class="text-sm font-medium">總支出</span>
+            </div>
+            <span class="text-2xl font-bold text-gray-900" x-text="'$' + totalAmount.toLocaleString()"></span>
+          </div>
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+            <div class="flex items-center gap-2 text-blue-600 mb-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              <span class="text-sm font-medium">本月支出</span>
+            </div>
+            <span class="text-2xl font-bold text-gray-900" x-text="'$' + currentMonthAmount.toLocaleString()"></span>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">消費分類</h3>
+          <div class="space-y-2">
+            <template x-for="cat in categoryStats" :key="cat.name">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 rounded-full" :style="`background-color: ${cat.color}`"></div>
+                  <span class="text-sm text-gray-700" x-text="cat.name"></span>
+                </div>
+                <span class="text-sm font-semibold text-gray-900" x-text="'$' + cat.value.toLocaleString()"></span>
+              </div>
+            </template>
+            <div x-show="expenses.length === 0" class="text-center text-gray-400 text-sm py-8">尚無資料</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- List View -->
+      <div x-show="view === 'list'" class="pb-24 space-y-6">
+        <header>
+          <h1 class="text-2xl font-bold text-gray-800">帳務明細</h1>
+        </header>
+
+        <div x-show="expenses.length === 0" class="flex flex-col items-center justify-center py-20 text-gray-400">
+          <div class="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+          </div>
+          <p>尚未有任何紀錄</p>
+          <p class="text-xs mt-1">點擊下方 + 按鈕開始記帳</p>
+        </div>
+
+        <template x-for="group in groupedExpenses" :key="group.date">
+          <div>
+            <div class="flex justify-between items-end mb-2 px-1">
+              <h3 class="text-gray-500 font-medium text-sm flex items-center gap-2">
+                <span class="text-lg text-gray-800 font-bold" x-text="group.dateStr"></span>
+                <span class="bg-gray-200 text-gray-600 text-[10px] px-1.5 py-0.5 rounded"
+                  x-text="group.dayOfWeek"></span>
+              </h3>
+              <span class="text-xs font-semibold text-gray-400" x-text="'NT$ ' + group.total.toLocaleString()"></span>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <template x-for="(expense, idx) in group.expenses" :key="expense.id">
+                <div class="flex items-center p-4 hover:bg-gray-50 transition-colors group"
+                  :class="idx !== group.expenses.length - 1 ? 'border-b border-gray-50' : ''">
+                  <div class="mr-4 shrink-0">
+                    <div class="p-2 rounded-full"
+                      :style="`color: ${getCategoryColor(expense.category)}; background-color: ${getCategoryColor(expense.category)}20`">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-baseline mb-0.5">
+                      <p class="font-semibold text-gray-800 truncate" x-text="expense.description"></p>
+                      <span class="font-bold text-gray-900 whitespace-nowrap ml-2"
+                        x-text="'$' + expense.amount.toLocaleString()"></span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-gray-500">
+                      <div class="flex items-center gap-2">
+                        <span x-text="expense.category"></span>
+                        <template x-if="expense.merchant">
+                          <span class="flex items-center gap-2">
+                            <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                            <span class="truncate max-w-[100px]" x-text="expense.merchant"></span>
+                          </span>
+                        </template>
+                      </div>
+                      <button @click="deleteExpense(expense.id)"
+                        class="opacity-0 group-hover:opacity-100 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                          </path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Settings View (Placeholder) -->
+      <div x-show="view === 'settings'" class="h-full"></div>
+    </main>
+
+    <!-- Settings Overlay -->
+    <div x-show="view === 'settings'" class="absolute inset-0 z-50 bg-gray-50">
+      <div class="h-full overflow-y-auto">
+        <div class="p-4 pt-10 pb-20">
+          <div class="bg-white min-h-[80vh] rounded-t-3xl shadow-lg p-6">
+            <div class="flex items-center gap-4 mb-6">
+              <button @click="view = 'dashboard'" class="p-2 hover:bg-gray-100 rounded-full text-gray-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18">
+                  </path>
+                </svg>
+              </button>
+              <h2 class="text-xl font-bold text-gray-800">系統設定</h2>
+            </div>
+
+            <div class="space-y-8">
+              <div class="space-y-3">
+                <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2">
+                  <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z">
+                    </path>
+                  </svg>
+                  AI 辨識設定 (Gemini)
+                </h3>
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-xs text-blue-700 leading-relaxed">
+                  若您是從 GitHub Pages 執行，必須在此輸入您的 API Key 才能使用圖片辨識功能。
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1">Gemini API Key</label>
+                  <input type="password" x-model="apiKey" placeholder="AIzaSy..."
+                    class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-3 text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2">
+                  <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                  </svg>
+                  Google Sheets 同步設定
+                </h3>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1">App Script 網頁應用程式網址</label>
+                  <input type="text" x-model="scriptUrl" placeholder="https://script.google.com/macros/s/..."
+                    class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-3 text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+              </div>
+
+              <div class="pt-4">
+                <button @click="saveSettings()"
+                  class="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg active:scale-95">
+                  <span class="flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4">
+                      </path>
+                    </svg>
+                    儲存所有設定
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Modal -->
+    <div x-show="showAddModal" class="absolute inset-0 z-50 bg-black/50 flex items-end justify-center backdrop-blur-sm"
+      @click.self="showAddModal = false">
+      <div class="w-full max-w-md bg-white min-h-[80vh] rounded-t-3xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-gray-800">新增支出</h2>
+          <button @click="showAddModal = false" class="p-2 hover:bg-gray-100 rounded-full text-gray-500">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">日期</label>
+              <input type="date" x-model="newExpense.date"
+                class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">金額</label>
+              <input type="number" x-model="newExpense.amount" placeholder="0"
+                class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">類別</label>
+            <div class="grid grid-cols-4 gap-2">
+              <template x-for="cat in categories" :key="cat">
+                <button @click="newExpense.category = cat"
+                  class="text-xs py-1.5 px-1 rounded-md border transition-all truncate"
+                  :class="newExpense.category === cat ? 'bg-emerald-100 border-emerald-300 text-emerald-800 font-semibold' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-100'"
+                  x-text="cat"></button>
+              </template>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">品項名稱</label>
+            <input type="text" x-model="newExpense.description" placeholder="例如：午餐、捷運"
+              class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">商家 (選填)</label>
+            <input type="text" x-model="newExpense.merchant" placeholder="例如：7-11"
+              class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+          </div>
+
+          <button @click="saveExpense()"
+            class="w-full bg-gray-900 text-white rounded-xl font-bold text-lg py-3 shadow-lg hover:bg-black transition-transform active:scale-95">
+            儲存
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav x-show="view !== 'settings'" class="bg-white border-t border-gray-100 pt-2 px-6 shadow-lg z-40">
+      <div class="flex justify-between items-center h-16">
+        <button @click="view = 'dashboard'" class="flex flex-col items-center gap-1 transition-colors"
+          :class="view === 'dashboard' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'">
+          <svg class="w-6 h-6" :stroke-width="view === 'dashboard' ? 2.5 : 2" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z">
+            </path>
+          </svg>
+          <span class="text-[10px] font-medium">總覽</span>
+        </button>
+
+        <div class="relative -top-6">
+          <button @click="showAddModal = true"
+            class="bg-gray-900 text-white p-4 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all border-4 border-[#F9FAFB]">
+            <svg class="w-7 h-7" stroke-width="2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+            </svg>
+          </button>
+        </div>
+
+        <button @click="view = 'list'" class="flex flex-col items-center gap-1 transition-colors"
+          :class="view === 'list' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'">
+          <svg class="w-6 h-6" :stroke-width="view === 'list' ? 2.5 : 2" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+          <span class="text-[10px] font-medium">明細</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <script>
+    function smartLedger() {
+      return {
+        view: 'dashboard',
+        showAddModal: false,
+        expenses: [],
+        apiKey: '',
+        scriptUrl: '',
+        categories: ['飲食', '交通', '購物', '娛樂', '居家', '醫療', '教育', '其他'],
+        categoryColors: {
+          '飲食': '#ef4444',
+          '交通': '#3b82f6',
+          '購物': '#f59e0b',
+          '娛樂': '#8b5cf6',
+          '居家': '#10b981',
+          '醫療': '#ec4899',
+          '教育': '#06b6d4',
+          '其他': '#6b7280'
+        },
+        newExpense: {
+          date: new Date().toISOString().split('T')[0],
+          amount: '',
+          category: '飲食',
+          description: '',
+          merchant: ''
+        },
+
+        init() {
+          // Load from localStorage
+          const saved = localStorage.getItem('smart-ledger-expenses');
+          if (saved) {
+            try {
+              this.expenses = JSON.parse(saved);
+            } catch (e) {
+              console.error('Failed to load expenses', e);
+            }
+          }
+
+          const savedKey = localStorage.getItem('smart-ledger-api-key');
+          if (savedKey) this.apiKey = savedKey;
+
+          const config = localStorage.getItem('smart-ledger-script-config');
+          if (config) {
+            try {
+              this.scriptUrl = JSON.parse(config).scriptUrl || '';
+            } catch (e) { }
+          }
+        },
+
+        get totalAmount() {
+          return this.expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+        },
+
+        get currentMonthAmount() {
+          const now = new Date();
+          const currentMonth = now.getMonth();
+          const currentYear = now.getFullYear();
+          return this.expenses
+            .filter(e => {
+              const d = new Date(e.date);
+              return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            })
+            .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+        },
+
+        get categoryStats() {
+          const map = {};
+          this.expenses.forEach(e => {
+            map[e.category] = (map[e.category] || 0) + parseFloat(e.amount || 0);
+          });
+          return Object.entries(map).map(([name, value]) => ({
+            name,
+            value,
+            color: this.categoryColors[name]
+          }));
+        },
+
+        get groupedExpenses() {
+          const groups = {};
+          this.expenses.forEach(e => {
+            if (!groups[e.date]) groups[e.date] = [];
+            groups[e.date].push(e);
+          });
+
+          return Object.keys(groups)
+            .sort((a, b) => new Date(b) - new Date(a))
+            .map(date => {
+              const dateObj = new Date(date);
+              return {
+                date,
+                dateStr: `${dateObj.getMonth() + 1}月${dateObj.getDate()}日`,
+                dayOfWeek: dateObj.toLocaleDateString('zh-TW', { weekday: 'short' }),
+                expenses: groups[date],
+                total: groups[date].reduce((sum, e) => sum + parseFloat(e.amount || 0), 0)
+              };
+            });
+        },
+
+        getCategoryColor(category) {
+          return this.categoryColors[category] || '#6b7280';
+        },
+
+        saveExpense() {
+          if (!this.newExpense.amount || !this.newExpense.description) {
+            alert('請填寫金額與描述');
+            return;
+          }
+
+          const expense = {
+            id: Date.now().toString(),
+            date: this.newExpense.date,
+            amount: parseFloat(this.newExpense.amount),
+            category: this.newExpense.category,
+            description: this.newExpense.description,
+            merchant: this.newExpense.merchant
+          };
+
+          this.expenses.push(expense);
+          localStorage.setItem('smart-ledger-expenses', JSON.stringify(this.expenses));
+
+          // Reset form
+          this.newExpense = {
+            date: new Date().toISOString().split('T')[0],
+            amount: '',
+            category: '飲食',
+            description: '',
+            merchant: ''
+          };
+          this.showAddModal = false;
+        },
+
+        deleteExpense(id) {
+          if (confirm('確定要刪除這筆紀錄嗎？')) {
+            this.expenses = this.expenses.filter(e => e.id !== id);
+            localStorage.setItem('smart-ledger-expenses', JSON.stringify(this.expenses));
+          }
+        },
+
+        saveSettings() {
+          if (this.apiKey) {
+            localStorage.setItem('smart-ledger-api-key', this.apiKey);
+          }
+          if (this.scriptUrl) {
+            localStorage.setItem('smart-ledger-script-config', JSON.stringify({ scriptUrl: this.scriptUrl }));
+          }
+          alert('設定已儲存');
+        }
+      };
+    }
+  </script>
 </body>
 
 </html>
