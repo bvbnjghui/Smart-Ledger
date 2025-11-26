@@ -1,0 +1,7 @@
+{
+  "name": "Smart Ledger AI",
+  "description": "A smart expense tracker powered by Gemini to automatically parse receipts and invoices.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
