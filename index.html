@@ -239,6 +239,14 @@
                   <input type="text" x-model="scriptUrl" placeholder="https://script.google.com/macros/s/..."
                     class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-3 text-sm focus:outline-none focus:border-emerald-500">
                 </div>
+                <button @click="showScriptModal = true"
+                  class="text-xs text-emerald-600 font-medium hover:text-emerald-700 flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                  </svg>
+                  取得後端程式碼 (Google Apps Script)
+                </button>
               </div>
 
               <div class="pt-4">
@@ -255,6 +263,47 @@
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Script Modal -->
+    <div x-show="showScriptModal"
+      class="absolute inset-0 z-[60] bg-black/50 flex items-center justify-center backdrop-blur-sm p-4"
+      @click.self="showScriptModal = false">
+      <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+          <h3 class="font-bold text-gray-800">Google Apps Script 後端程式碼</h3>
+          <button @click="showScriptModal = false" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="p-6 overflow-y-auto text-sm text-gray-600 space-y-4">
+          <div class="space-y-2">
+            <p class="font-bold text-gray-800">部署步驟：</p>
+            <ol class="list-decimal list-inside space-y-1 text-xs">
+              <li>建立一個新的 Google Sheet</li>
+              <li>點擊上方選單「擴充功能」>「Apps Script」</li>
+              <li>將下方程式碼貼上並覆蓋原有內容</li>
+              <li>點擊「部署」>「新增部署作業」</li>
+              <li>選取類型：「網頁應用程式」</li>
+              <li>誰可以存取：選取「<strong>所有人</strong>」</li>
+              <li>點擊「部署」並複製網頁應用程式網址</li>
+              <li>將網址貼回 App 的設定欄位中</li>
+            </ol>
+          </div>
+
+          <div class="relative">
+            <textarea readonly
+              class="w-full h-64 bg-gray-900 text-gray-100 p-4 rounded-xl font-mono text-xs leading-relaxed focus:outline-none"
+              x-text="backendScript"></textarea>
+            <button @click="copyScript()"
+              class="absolute top-2 right-2 bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded text-xs backdrop-blur transition-colors border border-white/20">
+              複製代碼
+            </button>
           </div>
         </div>
       </div>
@@ -476,6 +525,7 @@
       return {
         view: 'dashboard',
         showAddModal: false,
+        showScriptModal: false,
         addMode: 'manual', // manual, scan, text
         editingId: null,
         isAnalyzing: false,
@@ -484,6 +534,58 @@
         tempExpenses: [], // For batch add/edit
         apiKey: '',
         scriptUrl: '',
+        backendScript: `function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+  
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = JSON.parse(e.postData.contents);
+    
+    // Headers if empty
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["ID", "Date", "Amount", "Category", "Description", "Merchant", "Updated At"]);
+    }
+    
+    var rows = sheet.getDataRange().getValues();
+    var rowIndex = -1;
+    
+    // Check if ID exists (skip header)
+    for (var i = 1; i < rows.length; i++) {
+      if (rows[i][0] == data.id) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+    
+    var rowData = [
+      data.id,
+      data.date,
+      data.amount,
+      data.category,
+      data.description,
+      data.merchant,
+      new Date()
+    ];
+    
+    if (rowIndex > 0) {
+      // Update existing
+      sheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
+    } else {
+      // Append new
+      sheet.appendRow(rowData);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({result: "success"}))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (e) {
+    return ContentService.createTextOutput(JSON.stringify({result: "error", error: e}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}`,
         categories: ['飲食', '交通', '購物', '娛樂', '居家', '醫療', '教育', '其他'],
         categoryColors: {
           '飲食': '#ef4444',
@@ -766,11 +868,6 @@
           if (this.tempExpenses.length > 1) {
             this.tempExpenses.splice(index, 1);
           } else {
-            // If it's the last one, just clear fields or do nothing?
-            // Better to allow clearing fields but keep one row?
-            // Or allow deleting all? If delete all, maybe show "No items"?
-            // Let's allow deleting, if empty show "Add Row" button only?
-            // For now, allow splice.
             this.tempExpenses.splice(index, 1);
           }
         },
@@ -805,7 +902,6 @@
               if (index !== -1) {
                 this.expenses[index] = { ...this.expenses[index], ...expenseData };
               } else {
-                // Should not happen, but treat as new
                 this.expenses.push({
                   id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
                   ...expenseData
@@ -822,21 +918,17 @@
 
           localStorage.setItem('smart-ledger-expenses', JSON.stringify(this.expenses));
 
-          // Sync to Google Sheets if configured (Simple loop for now)
+          // Sync to Google Sheets if configured
           if (this.scriptUrl) {
             this.tempExpenses.forEach(exp => {
-              const dataToSend = exp.id ? { id: exp.id, ...exp } : { id: Date.now().toString(), ...exp }; // Note: ID might be wrong for new items here if we didn't capture the generated ID above.
-              // Fix: We should probably capture the ID.
-              // But for simplicity, let's just send the data. The script likely handles ID generation if missing, or we should generate it before pushing.
-              // Let's generate ID before pushing to expenses array to be safe.
+              const dataToSend = exp.id ? { id: exp.id, ...exp } : { id: Date.now().toString(), ...exp };
+              fetch(this.scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataToSend)
+              }).catch(e => console.error('Sync failed:', e));
             });
-
-            // Refined Sync Logic:
-            // We need to know the IDs of the saved items.
-            // Let's just fire and forget for now, or improve later. The user didn't ask for sync improvements.
-            // I will skip complex sync logic changes to avoid breaking things, just keep basic structure.
-            // Actually, the previous code sent the *edited* ID. 
-            // I'll leave the sync part as "best effort" for now since it's not the focus.
           }
 
           this.closeModal();
@@ -857,6 +949,15 @@
             localStorage.setItem('smart-ledger-script-config', JSON.stringify({ scriptUrl: this.scriptUrl }));
           }
           alert('設定已儲存');
+        },
+
+        copyScript() {
+          navigator.clipboard.writeText(this.backendScript).then(() => {
+            alert('程式碼已複製到剪貼簿！');
+          }).catch(err => {
+            console.error('複製失敗:', err);
+            alert('複製失敗，請手動選取複製');
+          });
         }
       };
     }
